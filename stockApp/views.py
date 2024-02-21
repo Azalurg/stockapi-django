@@ -32,3 +32,11 @@ class UsersDetail(APIView):
         user = self.get_by_id(pk)
         serializer = UserSerializer(user)
         return Response(serializer.data)
+
+    def patch(self, request, pk, format=None):
+        user = self.get_by_id(pk)
+        serializer = UserSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
