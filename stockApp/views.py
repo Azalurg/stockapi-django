@@ -1,13 +1,34 @@
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.http import Http404
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from stockApp.models import CustomUser
 from stockApp.serializers import UserSerializer
 
 
-@csrf_exempt
-def users_list(request):
-    if request.method == 'GET':
-        snippets = CustomUser.objects.all()
-        serializer = UserSerializer(snippets, many=True)
-        return JsonResponse(serializer.data, safe=False)
+class UsersList(APIView):
+    def get(self, request, format=None):
+        users = CustomUser.objects.all()
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, format=None):
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UsersDetail(APIView):
+    def get_by_id(self, pk) -> CustomUser:
+        try:
+            return CustomUser.objects.get(pk=pk)
+        except CustomUser.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        user = self.get_by_id(pk)
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
