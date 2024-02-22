@@ -121,3 +121,15 @@ class TestUsersListEndpoint(TestCase):
         )
 
         self.assertEquals(response.status_code, 400)
+
+    def test_delete_user(self):
+        user: CustomUser = UserFactory.create()
+
+        response = self.c.delete(f"/users/{user.pk}")
+
+        self.assertEquals(response.status_code, 204)
+
+    def test_delete_non_existing_user(self):
+        response = self.c.delete("/users/0")
+
+        self.assertEquals(response.status_code, 404)
