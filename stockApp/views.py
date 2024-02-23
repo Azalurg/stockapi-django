@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 
 from stockApp.models import CustomUser
 from stockApp.serializers import UserSerializer
+from rest_framework.generics import get_object_or_404
 
 
 class UsersList(APIView):
@@ -23,10 +24,8 @@ class UsersList(APIView):
 
 class UsersDetail(APIView):
     def get_by_id(self, pk) -> CustomUser:
-        try:
-            return CustomUser.objects.get(pk=pk)
-        except CustomUser.DoesNotExist:
-            raise Http404
+        user = get_object_or_404(CustomUser, pk=pk)
+        return user
 
     def get(self, request, pk, format=None):
         user = self.get_by_id(pk)
