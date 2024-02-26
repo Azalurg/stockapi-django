@@ -24,6 +24,7 @@ class CustomUserPermission(permissions.BasePermission):
             return obj == request.user
         return False
 
+
 class UsersList(APIView):
     permission_classes = [CustomUserListPermission]
 
