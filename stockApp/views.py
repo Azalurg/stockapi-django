@@ -9,7 +9,7 @@ from stockApp.models import CustomUser
 from stockApp.serializers import UserSerializer
 
 
-class CustomUserListPermission(permissions.BasePermission):
+class IsAdminGet(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method == "GET":
             if request.user and request.user.is_authenticated:
@@ -18,15 +18,13 @@ class CustomUserListPermission(permissions.BasePermission):
         return True
 
 
-class CustomUserPermission(permissions.BasePermission):
+class ISAccountOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        if request.user and request.user.is_authenticated:
-            return obj == request.user
-        return False
+        return request.user == obj
 
 
 class UsersList(APIView):
-    permission_classes = [CustomUserListPermission]
+    permission_classes = [IsAdminGet]
 
     def get(self, request, format=None):
         users = CustomUser.objects.all()
@@ -42,7 +40,7 @@ class UsersList(APIView):
 
 
 class UsersDetail(APIView):
-    permission_classes = [CustomUserPermission]
+    permission_classes = [ISAccountOwner]
 
     def get_by_id(self, request, pk) -> CustomUser:
         user = get_object_or_404(CustomUser, pk=pk)
