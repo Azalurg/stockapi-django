@@ -6,21 +6,19 @@ from rest_framework.views import APIView
 
 
 from stockApp.models import CustomUser
-from stockApp.serializers import UserSerializer
+from stockApp.serializers import CommonUserSerializer, UpdateUserSerializer
 
 
 class IsAdminGet(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method == "GET":
-            if request.user and request.user.is_authenticated:
-                return request.user.is_admin
-            return False
+            return request.user and request.user.is_authenticated and request.user.is_staff
         return True
 
 
 class ISAccountOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        return request.user == obj
+        return request.user and request.user.is_authenticated and request.user == obj
 
 
 class UsersList(APIView):
@@ -28,11 +26,11 @@ class UsersList(APIView):
 
     def get(self, request, format=None):
         users = CustomUser.objects.all()
-        serializer = UserSerializer(users, many=True)
+        serializer = CommonUserSerializer(users, many=True)
         return Response(serializer.data)
 
     def post(self, request, format=None):
-        serializer = UserSerializer(data=request.data)
+        serializer = CommonUserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -49,12 +47,12 @@ class UsersDetail(APIView):
 
     def get(self, request, pk, format=None):
         user = self.get_by_id(request, pk)
-        serializer = UserSerializer(user)
+        serializer = CommonUserSerializer(user)
         return Response(serializer.data)
 
     def patch(self, request, pk, format=None):
         user = self.get_by_id(request, pk)
-        serializer = UserSerializer(user, data=request.data, partial=True)
+        serializer = UpdateUserSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
