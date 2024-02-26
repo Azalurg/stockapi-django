@@ -101,6 +101,19 @@ class TestUsersListEndpoint(TestCase):
 
         self.assertEquals(response.status_code, 404)
 
+    def test_get_user_without_token(self):
+        response = self.c.get(f"/users/{self.admin_user.pk}")
+
+        self.assertEquals(response.status_code, 401)
+
+    def test_get_user_with_wrong_token(self):
+        response = self.c.get(
+            f"/users/{self.no_admin_user.pk}",
+            headers={"Authorization": f"Bearer {self.admin_token}"},
+        )
+
+        self.assertEquals(response.status_code, 403)
+
     def test_patch_user(self):
         user: CustomUser = UserFactory.create()
         access_token = AccessToken.for_user(user)
@@ -156,6 +169,19 @@ class TestUsersListEndpoint(TestCase):
 
         self.assertEquals(response.status_code, 400)
 
+    def test_patch_user_without_token(self):
+        response = self.c.patch(f"/users/{self.admin_user.pk}")
+
+        self.assertEquals(response.status_code, 401)
+
+    def test_patch_user_with_wrong_token(self):
+        response = self.c.patch(
+            f"/users/{self.no_admin_user.pk}",
+            headers={"Authorization": f"Bearer {self.admin_token}"},
+        )
+
+        self.assertEquals(response.status_code, 403)
+
     def test_delete_user(self):
         user: CustomUser = UserFactory.create()
         access_token = AccessToken.for_user(user)
@@ -170,3 +196,16 @@ class TestUsersListEndpoint(TestCase):
         response = self.c.delete("/users/0")
 
         self.assertEquals(response.status_code, 404)
+
+    def test_delete_user_without_token(self):
+        response = self.c.delete(f"/users/{self.admin_user.pk}")
+
+        self.assertEquals(response.status_code, 401)
+
+    def test_delete_user_with_wrong_token(self):
+        response = self.c.delete(
+            f"/users/{self.no_admin_user.pk}",
+            headers={"Authorization": f"Bearer {self.admin_token}"},
+        )
+
+        self.assertEquals(response.status_code, 403)
