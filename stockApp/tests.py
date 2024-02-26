@@ -121,7 +121,9 @@ class TestUsersListEndpoint(TestCase):
             "first_name": "Sirius",
             "last_name": "Black",
             "email": "sirius.black@example.com",
+            "password": "SiriusBlack"
         }
+        old_password = user.password
 
         self.assertNotEquals(user_json.get("email"), user.email)
 
@@ -134,6 +136,10 @@ class TestUsersListEndpoint(TestCase):
 
         self.assertEquals(response.status_code, 200)
         self.assertEquals(response.data.get("email"), user_json.get("email"))
+
+        user_from_db: CustomUser = CustomUser.objects.get_by_natural_key(user_json.get("email"))
+
+        self.assertEquals(user_from_db.password, old_password)
 
     def test_patch_user_with_part_data(self):
         user: CustomUser = UserFactory.create()
