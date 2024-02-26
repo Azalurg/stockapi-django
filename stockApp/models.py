@@ -26,7 +26,7 @@ class CustomUser(AbstractBaseUser):
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     is_admin = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now)
     modified_at = models.DateTimeField(auto_now=True)
 
