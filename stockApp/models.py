@@ -84,8 +84,8 @@ class StockData(models.Model):
     name = models.CharField()
     exchange = models.CharField()
     type = models.CharField(choices=StockType)
-    currency = models.ForeignKey(Country, on_delete=models.PROTECT)
-    country = models.ForeignKey(Currency, on_delete=models.PROTECT)
+    currency = models.ForeignKey(Currency, on_delete=models.PROTECT)
+    country = models.ForeignKey(Country, on_delete=models.PROTECT)
     created_at = models.DateTimeField(default=timezone.now)
     last_time_series_update = models.DateField(default=None, null=True)
 
