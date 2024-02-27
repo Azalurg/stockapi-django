@@ -63,31 +63,31 @@ class Currency(models.Model):
 
 
 class StockData(models.Model):
-    TYPE_CHOICES = [
-        (0, "Closed-end Fund"),
-        (1, "Common Stock"),
-        (2, "Depositary Receipt"),
-        (3, "ETF"),
-        (4, "Exchange-Traded Note"),
-        (5, "Global Depositary Receipt"),
-        (6, "Limited Partnership"),
-        (7, "Mutual Fund"),
-        (8, "Preferred Stock"),
-        (9, "REIT"),
-        (10, "Right"),
-        (11, "Structured Product"),
-        (12, "Trust"),
-        (13, "Unit"),
-        (14, "Warrant"),
-    ]
+    class StockType(models.TextChoices):
+        CLOSED_END_FUND = "Closed-end Fund"
+        COMMON_STOCK = "Common Stock"
+        DEPOSITARY_RECEIPT = "Depositary Receipt"
+        ETF = "ETF"
+        EXCHANGE_TRADED_NOTE = "Exchange-Traded Note"
+        GLOBAL_DEPOSITARY_RECEIPT = "Global Depositary Receipt"
+        LIMITED_PARTNERSHIP = "Limited Partnership"
+        MUTUAL_FUND = "Mutual Fund"
+        PREFERRED_STOCK = "Preferred Stock"
+        REIT = "REIT"
+        RIGHT = "Right"
+        STRUCTURED_PRODUCT = "Structured Product"
+        TRUST = "Trust"
+        UNIT = "Unit"
+        WARRANT = "Warrant"
+
     symbol = models.CharField(unique=True)
     name = models.CharField()
     exchange = models.CharField()
-    type = models.CharField(choices=TYPE_CHOICES)
-    currency = models.ForeignKey(Country, on_delete=models.DO_NOTHING)
-    country = models.ForeignKey(Currency, on_delete=models.DO_NOTHING)
+    type = models.CharField(choices=StockType)
+    currency = models.ForeignKey(Country, on_delete=models.PROTECT)
+    country = models.ForeignKey(Currency, on_delete=models.PROTECT)
     created_at = models.DateTimeField(default=timezone.now)
-    last_update = models.DateTimeField(auto_now=True)
+    last_time_series_update = models.DateField(default=None, null=True)
 
 
 class StockTimeSeriesData(models.Model):
