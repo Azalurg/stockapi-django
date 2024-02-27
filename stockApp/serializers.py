@@ -5,7 +5,15 @@ from stockApp.models import CustomUser
 class CommonUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ["id", "email", "first_name", "last_name", "password", "created_at", "modified_at"]
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "password",
+            "created_at",
+            "modified_at",
+        ]
         read_only_fields = ["id", "created_at", "modified_at"]
         extra_kwargs = {"password": {"write_only": True}}
 

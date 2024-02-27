@@ -52,3 +52,49 @@ class CustomUser(AbstractBaseUser):
     @property
     def is_staff(self):
         return self.is_admin
+
+
+class Country(models.Model):
+    name = models.CharField(unique=True)
+
+
+class Currency(models.Model):
+    name = models.CharField(unique=True)
+
+
+class StockData(models.Model):
+    class StockType(models.TextChoices):
+        CLOSED_END_FUND = "Closed-end Fund"
+        COMMON_STOCK = "Common Stock"
+        DEPOSITARY_RECEIPT = "Depositary Receipt"
+        ETF = "ETF"
+        EXCHANGE_TRADED_NOTE = "Exchange-Traded Note"
+        GLOBAL_DEPOSITARY_RECEIPT = "Global Depositary Receipt"
+        LIMITED_PARTNERSHIP = "Limited Partnership"
+        MUTUAL_FUND = "Mutual Fund"
+        PREFERRED_STOCK = "Preferred Stock"
+        REIT = "REIT"
+        RIGHT = "Right"
+        STRUCTURED_PRODUCT = "Structured Product"
+        TRUST = "Trust"
+        UNIT = "Unit"
+        WARRANT = "Warrant"
+
+    symbol = models.CharField(unique=True)
+    name = models.CharField()
+    exchange = models.CharField()
+    type = models.CharField(choices=StockType)
+    currency = models.ForeignKey(Country, on_delete=models.PROTECT)
+    country = models.ForeignKey(Currency, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(default=timezone.now)
+    last_time_series_update = models.DateField(default=None, null=True)
+
+
+class StockTimeSeriesData(models.Model):
+    stock = models.ForeignKey(StockData, on_delete=models.CASCADE)
+    open = models.FloatField()
+    high = models.FloatField()
+    low = models.FloatField()
+    close = models.FloatField()
+    volume = models.FloatField()
+    date = models.DateField()
