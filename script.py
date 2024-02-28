@@ -1,5 +1,6 @@
 import os
 import django
+from random import shuffle
 
 os.environ["DJANGO_SETTINGS_MODULE"] = "stockProject.settings"
 django.setup()
@@ -15,10 +16,10 @@ def load_data():
     us_dollar, created = Currency.objects.get_or_create(name="USD")
 
     response = requests.get(api_url)
-    stocks_json = response.json()["data"]
-    for i in range(0, len(stocks_json), 50):
-        stock_data = stocks_json[i]
-        stock = StockData(
+    stocks_json: list = response.json()["data"]
+    shuffle(stocks_json)
+    for stock_data in stocks_json[:40]:
+        StockData.objects.get_or_create(
             symbol=stock_data.get("symbol"),
             name=stock_data.get("name"),
             exchange=stock_data.get("exchange"),
@@ -26,7 +27,6 @@ def load_data():
             currency=us_dollar,
             country=usa,
         )
-        stock.save()
 
 
 if __name__ == "__main__":
