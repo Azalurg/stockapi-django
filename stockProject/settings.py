@@ -15,6 +15,8 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from stockProject.tasks import add
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -39,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_celery_results',
     'rest_framework',
     'rest_framework_simplejwt',
     'stockApp',
@@ -140,4 +143,17 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(env("ACCESS_TOKEN_LIFETIME"))),
+}
+
+# Celery
+
+CELERY_RESULT_BACKEND = "django-db"
+CELERY_TIMEZONE = 'Europe/Warsaw'
+
+CELERY_BEAT_SCHEDULE = {
+    'test-task': {
+        'task': "stockProject.tasks.add",
+        'schedule': 5.0,
+        'args': (1, 2)
+    },
 }
