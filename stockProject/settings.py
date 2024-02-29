@@ -15,7 +15,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-from stockProject.tasks import add
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -151,9 +151,12 @@ CELERY_RESULT_BACKEND = "django-db"
 CELERY_TIMEZONE = 'Europe/Warsaw'
 
 CELERY_BEAT_SCHEDULE = {
-    'test-task': {
-        'task': "stockProject.tasks.add",
-        'schedule': 5.0,
-        'args': (1, 2)
+    'get_stock_time_series': {
+        'task': "stockApp.tasks.get_stock_time_series",
+        'schedule': crontab(hour="9", minute="01"),
     },
 }
+
+# Traveldata
+
+TWELVEDATA_API_KEY = env("TWELVEDATA_API_KEY")
