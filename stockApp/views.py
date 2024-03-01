@@ -1,8 +1,8 @@
-from django.db.models import Max, F, Subquery, OuterRef
+from django.db.models import OuterRef
 from rest_framework import permissions
 from rest_framework import status
-from rest_framework.generics import get_object_or_404
-from rest_framework.renderers import JSONRenderer
+from rest_framework.generics import get_object_or_404, ListAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -72,7 +72,8 @@ class UsersDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class StockPrices(APIView):
+class StockPrices(ListAPIView):
+    # permission_classes = [IsAuthenticated]
     def get(self, request):
         def get_query(val: str):
             return StockTimeSeriesData.objects.filter(
@@ -91,6 +92,10 @@ class StockPrices(APIView):
             .order_by("-volume", "symbol")
         )
 
-        serializer = StockDataSerializer(result, many=True)
+        page = self.paginate_queryset(result)
+        if page is not None:
+            serializer = StockDataSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
+        serializer = StockDataSerializer(result, many=True)
         return Response(serializer.data)
