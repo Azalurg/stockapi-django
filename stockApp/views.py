@@ -73,7 +73,8 @@ class UsersDetail(APIView):
 
 
 class StockPrices(ListAPIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         def get_query(val: str):
             return StockTimeSeriesData.objects.filter(
