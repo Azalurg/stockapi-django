@@ -5,8 +5,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 
-from stockApp.models import CustomUser
-from stockApp.serializers import CommonUserSerializer, UpdateUserSerializer
+from stockApp.models import CustomUser, StockData, StockTimeSeriesData
+from stockApp.serializers import CommonUserSerializer, UpdateUserSerializer, StockDataSerializer
 
 
 class IsAdminGet(permissions.BasePermission):
@@ -64,3 +64,10 @@ class UsersDetail(APIView):
         user = self.get_by_id(request, pk)
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class StockPrices(APIView):
+    def get(self, request):
+        stocks = list(StockData.objects.all())
+        serializer = StockDataSerializer(stocks, many=True)
+        return Response(serializer.data)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from stockApp.models import CustomUser
+from stockApp.models import CustomUser, StockTimeSeriesData, StockData
 
 
 class CommonUserSerializer(serializers.ModelSerializer):
@@ -32,3 +32,18 @@ class UpdateUserSerializer(serializers.ModelSerializer):
         instance.last_name = validated_data.get("last_name", instance.last_name)
         instance.save()
         return instance
+
+
+class StockTimeSeriesDataSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = StockTimeSeriesData
+        fields = ['open', 'high', 'low', 'close', 'volume', 'date']
+
+
+class StockDataSerializer(serializers.ModelSerializer):
+    timeseries = StockTimeSeriesDataSerializer(many=False, read_only=True)
+
+    class Meta:
+        model = StockData
+        fields = ['timeseries', 'symbol', 'name', 'exchange', 'type', 'currency', 'country']
