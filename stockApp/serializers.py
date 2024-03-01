@@ -34,16 +34,25 @@ class UpdateUserSerializer(serializers.ModelSerializer):
         return instance
 
 
-class StockTimeSeriesDataSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = StockTimeSeriesData
-        fields = ['open', 'high', 'low', 'close', 'volume', 'date']
-
-
 class StockDataSerializer(serializers.ModelSerializer):
-    timeseries = StockTimeSeriesDataSerializer(many=False, read_only=True)
+    open = serializers.FloatField()
+    high = serializers.FloatField()
+    low = serializers.FloatField()
+    close = serializers.FloatField()
+    volume = serializers.FloatField()
 
     class Meta:
         model = StockData
-        fields = ['timeseries', 'symbol', 'name', 'exchange', 'type', 'currency', 'country']
+        fields = [
+            "symbol",
+            "name",
+            "exchange",
+            "type",
+            "currency",
+            "country",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+        ]

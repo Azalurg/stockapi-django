@@ -1,12 +1,18 @@
+from django.db.models import Max, F, Subquery, OuterRef
 from rest_framework import permissions
 from rest_framework import status
 from rest_framework.generics import get_object_or_404
+from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 
 from stockApp.models import CustomUser, StockData, StockTimeSeriesData
-from stockApp.serializers import CommonUserSerializer, UpdateUserSerializer, StockDataSerializer
+from stockApp.serializers import (
+    CommonUserSerializer,
+    UpdateUserSerializer,
+    StockDataSerializer,
+)
 
 
 class IsAdminGet(permissions.BasePermission):
@@ -68,6 +74,23 @@ class UsersDetail(APIView):
 
 class StockPrices(APIView):
     def get(self, request):
-        stocks = list(StockData.objects.all())
-        serializer = StockDataSerializer(stocks, many=True)
+        def get_query(val: str):
+            return StockTimeSeriesData.objects.filter(
+                stock__id=OuterRef("id"), date=OuterRef("last_time_series_update")
+            ).values(val)
+
+        result = (
+            StockData.objects.all()
+            .annotate(
+                volume=get_query("volume"),
+                open=get_query("open"),
+                close=get_query("close"),
+                high=get_query("high"),
+                low=get_query("low"),
+            )
+            .order_by("-volume", "symbol")
+        )
+
+        serializer = StockDataSerializer(result, many=True)
+
         return Response(serializer.data)
