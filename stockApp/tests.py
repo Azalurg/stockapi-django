@@ -1,7 +1,15 @@
+from datetime import datetime
+from unittest.mock import patch, MagicMock
+
 import factory.django
-from django.test import Client, TestCase
+from django.conf import settings
+from django.test import Client
+from django.test import TestCase
 from rest_framework_simplejwt.tokens import AccessToken
-from stockApp.models import CustomUser
+
+from stockApp.models import CustomUser, Country, Currency
+from stockApp.models import StockData, StockTimeSeriesData
+from stockApp.tasks import get_stock_time_series
 
 
 class UserFactory(factory.django.DjangoModelFactory):
@@ -14,7 +22,7 @@ class UserFactory(factory.django.DjangoModelFactory):
     password = factory.django.Password("password")
 
 
-class TestUsersListEndpoint(TestCase):
+class TestUsersEndpoint(TestCase):
     def setUp(self):
         self.c = Client()
         self.admin_user: CustomUser = CustomUser.objects.create_superuser(
@@ -217,3 +225,48 @@ class TestUsersListEndpoint(TestCase):
         )
 
         self.assertEquals(response.status_code, 403)
+
+
+class TestGetStockTimeSeries(TestCase):
+    def setUp(self):
+        settings.CELERY_TASK_ALWAYS_EAGER = True
+
+        self.country, created = Country.objects.get_or_create(name="United States")
+        self.currency, created = Currency.objects.get_or_create(name="USD")
+        StockData.objects.get_or_create(
+            symbol="AAPL", country=self.country, currency=self.currency
+        )
+
+        self.response_result = {
+            "values": [
+                {
+                    "open": 100.0,
+                    "high": 110.0,
+                    "low": 90.0,
+                    "close": 105.0,
+                    "volume": 100000,
+                    "datetime": "2020-01-01",
+                }
+            ]
+        }
+
+    @patch("stockApp.tasks.requests.get")
+    @patch("stockApp.tasks.sleep")
+    def test_get_stock_time_series_success(self, mock_sleep, mock_get):
+        mock_response = MagicMock()
+        mock_response.json.return_value = self.response_result
+        mock_get.return_value = mock_response
+
+        get_stock_time_series()
+
+        stock_time_series = StockTimeSeriesData.objects.get(stock__symbol="AAPL")
+        stock = StockData.objects.get(symbol="AAPL")
+
+        self.assertEqual(stock_time_series.open, 100.0)
+        self.assertEqual(
+            stock_time_series.date, datetime.strptime("2020-01-01", "%Y-%m-%d").date()
+        )
+        self.assertEquals(
+            stock.last_time_series_update,
+            datetime.strptime("2020-01-01", "%Y-%m-%d").date(),
+        )
