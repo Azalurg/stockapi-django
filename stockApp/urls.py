@@ -10,5 +10,7 @@ urlpatterns = [
     path('users/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('users/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('users/<int:pk>', views.UsersDetail.as_view()),
-    path('stock/prices/', views.StockPrices.as_view())
+    path('stock/prices/', views.StockPrices.as_view()),
+    path('stock/follow', views.FollowStock.as_view()),
+    path('stock/unfollow', views.UnfollowStock.as_view())
 ]

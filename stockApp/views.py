@@ -102,3 +102,43 @@ class StockPrices(ListAPIView):
 
         serializer = StockDataSerializer(result, many=True)
         return Response(serializer.data)
+
+
+class FollowStock(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        stock_id = request.data.get("id")
+        stock = get_object_or_404(StockData, pk=stock_id)
+        user = request.user
+
+        if user.following.filter(pk=stock_id).exists():
+            return Response(
+                {"message": "Stock already followed"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.following.add(stock)
+        user.save()
+
+        return Response({"message": "Success"})
+
+
+class UnfollowStock(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        stock_id = request.data.get("id")
+        stock = get_object_or_404(StockData, pk=stock_id)
+        user = request.user
+
+        # Check if the user is already following the stock
+        if not user.following.filter(pk=stock_id).exists():
+            return Response(
+                {"message": "Stock not followed"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user.following.remove(stock)
+        user.save()
+
+        return Response({"message": "Success"})
