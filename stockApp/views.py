@@ -1,4 +1,7 @@
 from django.db.models import OuterRef, Subquery, F
+from django.http import HttpResponse
+from django.shortcuts import render
+from django.template import loader
 from rest_framework import permissions
 from rest_framework import status
 from rest_framework.generics import get_object_or_404, ListAPIView
@@ -142,3 +145,7 @@ class UnfollowStock(APIView):
         user.save()
 
         return Response({"message": "Success"})
+
+
+def index(request):
+    return render(request, "index.html")

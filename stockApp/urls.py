@@ -12,5 +12,6 @@ urlpatterns = [
     path('users/<int:pk>', views.UsersDetail.as_view()),
     path('stock/prices/', views.StockPrices.as_view()),
     path('stock/follow', views.FollowStock.as_view()),
-    path('stock/unfollow', views.UnfollowStock.as_view())
+    path('stock/unfollow', views.UnfollowStock.as_view()),
+    path('homepage/', views.index, name="homepage")
 ]
