@@ -13,5 +13,5 @@ urlpatterns = [
     path('stock/prices/', views.StockPrices.as_view()),
     path('stock/follow', views.FollowStock.as_view()),
     path('stock/unfollow', views.UnfollowStock.as_view()),
-    path('homepage/', views.index, name="homepage")
+    path('homepage/', views.Homepage.as_view(), name="homepage")
 ]

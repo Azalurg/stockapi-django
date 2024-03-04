@@ -149,19 +149,22 @@ class UnfollowStock(APIView):
         return Response({"message": "Success"})
 
 
-def index(request):
-    user = CustomUser.objects.get(id=1)
-    stocks_ids = user.following.values_list("id", flat=True)
-    stocks = (
-        StockTimeSeriesData.objects.filter(
-            date=F("stock__last_time_series_update"), stock__id__in=stocks_ids
-        )
-        .values(*stock_values)
-        .order_by("-volume", "stock__symbol")
-    )
+class Homepage(APIView):
+    permission_classes = [IsAuthenticated]
 
-    return render(
-        request,
-        "index.html",
-        {"user": user, "stocks": StockDataSerializer(stocks, many=True).data},
-    )
+    def get(self, request):
+        user = request.user
+        stocks_ids = user.following.values_list("id", flat=True)
+        stocks = (
+            StockTimeSeriesData.objects.filter(
+                date=F("stock__last_time_series_update"), stock__id__in=stocks_ids
+            )
+            .values(*stock_values)
+            .order_by("-volume", "stock__symbol")
+        )
+
+        return render(
+            request,
+            "index.html",
+            {"user": user, "stocks": StockDataSerializer(stocks, many=True).data},
+        )
