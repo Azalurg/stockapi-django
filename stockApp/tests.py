@@ -319,3 +319,78 @@ class TestStockPricesData(TestCase):
         response = self.c.get("/stock/prices/")
 
         self.assertEquals(response.status_code, 401)
+
+
+class TestFollowUnfollowEndpoint(TestCase):
+    def setUp(self):
+        self.c = Client()
+        self.country, created = Country.objects.get_or_create(name="United States")
+        self.currency, created = Currency.objects.get_or_create(name="USD")
+        self.stock, created = StockData.objects.get_or_create(
+            symbol="AAPL",
+            country=self.country,
+            currency=self.currency,
+            last_time_series_update="2020-01-02",
+        )
+
+    def test_follow_stock(self):
+        self.user = UserFactory.create()
+        self.user_token = AccessToken.for_user(self.user)
+
+        response = self.c.post(
+            "/stock/follow", {"id": self.stock.id}, headers={"Authorization": f"Bearer {self.user_token}"}
+        )
+
+        self.assertEquals(response.status_code, 200)
+
+    def test_follow_again_stock(self):
+        self.user = UserFactory.create()
+        self.user_token = AccessToken.for_user(self.user)
+        self.user.following.add(self.stock)
+
+        response = self.c.post(
+            "/stock/follow", {"id": self.stock.id}, headers={"Authorization": f"Bearer {self.user_token}"}
+        )
+
+        self.assertEquals(response.status_code, 400)
+
+    def test_follow_wrong_stock(self):
+        self.user = UserFactory.create()
+        self.user_token = AccessToken.for_user(self.user)
+
+        response = self.c.post(
+            "/stock/follow", {"id": 0}, headers={"Authorization": f"Bearer {self.user_token}"}
+        )
+
+        self.assertEquals(response.status_code, 404)
+
+    def test_follow_stock_without_admin(self):
+        self.user = UserFactory.create()
+        self.user_token = AccessToken.for_user(self.user)
+
+        response = self.c.post(
+            "/stock/follow", {"id": self.stock.id}
+        )
+
+        self.assertEquals(response.status_code, 401)
+
+    def test_unfollow_stock(self):
+        self.user = UserFactory.create()
+        self.user_token = AccessToken.for_user(self.user)
+        self.user.following.add(self.stock)
+
+        response = self.c.post(
+            "/stock/unfollow", {"id": self.stock.id}, headers={"Authorization": f"Bearer {self.user_token}"}
+        )
+
+        self.assertEquals(response.status_code, 200)
+
+    def test_unfollow_again_stock(self):
+        self.user = UserFactory.create()
+        self.user_token = AccessToken.for_user(self.user)
+
+        response = self.c.post(
+            "/stock/unfollow", {"id": self.stock.id}, headers={"Authorization": f"Bearer {self.user_token}"}
+        )
+
+        self.assertEquals(response.status_code, 400)

@@ -113,13 +113,15 @@ class FollowStock(APIView):
         user = request.user
 
         if user.following.filter(pk=stock_id).exists():
-            return Response({"message": "Stock already followed"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": "Stock already followed"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         user.following.add(stock)
         user.save()
 
         return Response({"message": "Success"})
-
 
 
 class UnfollowStock(APIView):
@@ -132,7 +134,9 @@ class UnfollowStock(APIView):
 
         # Check if the user is already following the stock
         if not user.following.filter(pk=stock_id).exists():
-            return Response({"message": "Stock not followed"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": "Stock not followed"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         user.following.remove(stock)
         user.save()
