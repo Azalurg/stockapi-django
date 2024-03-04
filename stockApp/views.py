@@ -17,6 +17,21 @@ from stockApp.serializers import (
     StockDataSerializer,
 )
 
+stock_values = [
+    "stock__symbol",
+    "stock__name",
+    "stock__exchange",
+    "stock__type",
+    "stock__currency__name",
+    "stock__country__name",
+    "close",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+]
+
 
 class IsAdminGet(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -81,20 +96,7 @@ class StockPrices(ListAPIView):
     def get(self, request):
         result = (
             StockTimeSeriesData.objects.filter(date=F("stock__last_time_series_update"))
-            .values(
-                "stock__symbol",
-                "stock__name",
-                "stock__exchange",
-                "stock__type",
-                "stock__currency__name",
-                "stock__country__name",
-                "close",
-                "open",
-                "high",
-                "low",
-                "close",
-                "volume",
-            )
+            .values(*stock_values)
             .order_by("-volume", "stock__symbol")
         )
 
@@ -148,4 +150,18 @@ class UnfollowStock(APIView):
 
 
 def index(request):
-    return render(request, "index.html")
+    user = CustomUser.objects.get(id=1)
+    stocks_ids = user.following.values_list("id", flat=True)
+    stocks = (
+        StockTimeSeriesData.objects.filter(
+            date=F("stock__last_time_series_update"), stock__id__in=stocks_ids
+        )
+        .values(*stock_values)
+        .order_by("-volume", "stock__symbol")
+    )
+
+    return render(
+        request,
+        "index.html",
+        {"user": user, "stocks": StockDataSerializer(stocks, many=True).data},
+    )
