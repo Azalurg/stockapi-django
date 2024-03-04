@@ -35,25 +35,15 @@ class UpdateUserSerializer(serializers.ModelSerializer):
         return instance
 
 
-class StockDataSerializer(serializers.ModelSerializer):
+class StockDataSerializer(serializers.Serializer):
+    symbol = serializers.CharField(source="stock__symbol")
+    name = serializers.CharField(source="stock__name")
+    exchange = serializers.CharField(source="stock__exchange")
+    type = serializers.CharField(source="stock__type")
+    currency = serializers.CharField(source="stock__currency__name")
+    country = serializers.CharField(source="stock__country__name")
     open = serializers.FloatField()
+    close = serializers.FloatField()
     high = serializers.FloatField()
     low = serializers.FloatField()
-    close = serializers.FloatField()
     volume = serializers.FloatField()
-
-    class Meta:
-        model = StockData
-        fields = [
-            "symbol",
-            "name",
-            "exchange",
-            "type",
-            "currency",
-            "country",
-            "open",
-            "high",
-            "low",
-            "close",
-            "volume",
-        ]

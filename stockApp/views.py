@@ -1,4 +1,4 @@
-from django.db.models import OuterRef
+from django.db.models import OuterRef, Subquery, F
 from rest_framework import permissions
 from rest_framework import status
 from rest_framework.generics import get_object_or_404, ListAPIView
@@ -76,21 +76,23 @@ class StockPrices(ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        def get_query(val: str):
-            return StockTimeSeriesData.objects.filter(
-                stock__id=OuterRef("id"), date=OuterRef("last_time_series_update")
-            ).values(val)
-
         result = (
-            StockData.objects.all()
-            .annotate(
-                volume=get_query("volume"),
-                open=get_query("open"),
-                close=get_query("close"),
-                high=get_query("high"),
-                low=get_query("low"),
+            StockTimeSeriesData.objects.filter(date=F("stock__last_time_series_update"))
+            .values(
+                "stock__symbol",
+                "stock__name",
+                "stock__exchange",
+                "stock__type",
+                "stock__currency__name",
+                "stock__country__name",
+                "close",
+                "open",
+                "high",
+                "low",
+                "close",
+                "volume",
             )
-            .order_by("-volume", "symbol")
+            .order_by("-volume", "stock__symbol")
         )
 
         page = self.paginate_queryset(result)
