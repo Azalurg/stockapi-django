@@ -270,3 +270,52 @@ class TestGetStockTimeSeries(TestCase):
             stock.last_time_series_update,
             datetime.strptime("2020-01-01", "%Y-%m-%d").date(),
         )
+
+
+class TestStockPricesData(TestCase):
+    def setUp(self):
+        self.c = Client()
+        self.country, created = Country.objects.get_or_create(name="United States")
+        self.currency, created = Currency.objects.get_or_create(name="USD")
+        self.stock, created = StockData.objects.get_or_create(
+            symbol="AAPL",
+            country=self.country,
+            currency=self.currency,
+            last_time_series_update="2020-01-02",
+        )
+
+        StockTimeSeriesData.objects.get_or_create(
+            open=100.0,
+            close=100.0,
+            high=100.0,
+            low=100.0,
+            volume=100000,
+            date="2020-01-01",
+            stock=self.stock,
+        )
+        StockTimeSeriesData.objects.get_or_create(
+            open=120.0,
+            close=120.0,
+            high=120.0,
+            low=120.0,
+            volume=120000,
+            date="2020-01-02",
+            stock=self.stock,
+        )
+
+        self.user = UserFactory.create()
+        self.user_token = AccessToken.for_user(self.user)
+
+    def test_stock_prices_endpoint(self):
+        response = self.c.get(
+            "/stock/prices/", headers={"Authorization": f"Bearer {self.user_token}"}
+        )
+
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.data.get("results")[0]["volume"], 120000)
+        self.assertEquals(response.data.get("count"), 1)
+
+    def test_stock_prices_endpoint_without_token(self):
+        response = self.c.get("/stock/prices/")
+
+        self.assertEquals(response.status_code, 401)

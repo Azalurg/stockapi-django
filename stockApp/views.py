@@ -1,12 +1,18 @@
+from django.db.models import OuterRef, Subquery, F
 from rest_framework import permissions
 from rest_framework import status
-from rest_framework.generics import get_object_or_404
+from rest_framework.generics import get_object_or_404, ListAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 
-from stockApp.models import CustomUser
-from stockApp.serializers import CommonUserSerializer, UpdateUserSerializer
+from stockApp.models import CustomUser, StockData, StockTimeSeriesData
+from stockApp.serializers import (
+    CommonUserSerializer,
+    UpdateUserSerializer,
+    StockDataSerializer,
+)
 
 
 class IsAdminGet(permissions.BasePermission):
@@ -64,3 +70,35 @@ class UsersDetail(APIView):
         user = self.get_by_id(request, pk)
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class StockPrices(ListAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        result = (
+            StockTimeSeriesData.objects.filter(date=F("stock__last_time_series_update"))
+            .values(
+                "stock__symbol",
+                "stock__name",
+                "stock__exchange",
+                "stock__type",
+                "stock__currency__name",
+                "stock__country__name",
+                "close",
+                "open",
+                "high",
+                "low",
+                "close",
+                "volume",
+            )
+            .order_by("-volume", "stock__symbol")
+        )
+
+        page = self.paginate_queryset(result)
+        if page is not None:
+            serializer = StockDataSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = StockDataSerializer(result, many=True)
+        return Response(serializer.data)

@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from stockApp.models import CustomUser
+
+from stockApp.models import CustomUser, StockData
 
 
 class CommonUserSerializer(serializers.ModelSerializer):
@@ -32,3 +33,17 @@ class UpdateUserSerializer(serializers.ModelSerializer):
         instance.last_name = validated_data.get("last_name", instance.last_name)
         instance.save()
         return instance
+
+
+class StockDataSerializer(serializers.Serializer):
+    symbol = serializers.CharField(source="stock__symbol")
+    name = serializers.CharField(source="stock__name")
+    exchange = serializers.CharField(source="stock__exchange")
+    type = serializers.CharField(source="stock__type")
+    currency = serializers.CharField(source="stock__currency__name")
+    country = serializers.CharField(source="stock__country__name")
+    open = serializers.FloatField()
+    close = serializers.FloatField()
+    high = serializers.FloatField()
+    low = serializers.FloatField()
+    volume = serializers.FloatField()
