@@ -63,6 +63,7 @@ class StockData(models.Model):
     def __str__(self):
         return f"{self.symbol} - {self.name}"
 
+
 class StockTimeSeriesData(models.Model):
     stock = models.ForeignKey(StockData, on_delete=models.CASCADE)
     open = models.FloatField()

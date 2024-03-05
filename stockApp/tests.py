@@ -9,7 +9,8 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 from stockApp.models import CustomUser, Country, Currency
 from stockApp.models import StockData, StockTimeSeriesData
-from stockApp.tasks import get_stock_time_series
+from stockApp.tasks import get_all_stocks_time_series, get_stock_time_series
+from stockProject.celery import app
 
 
 class UserFactory(factory.django.DjangoModelFactory):
@@ -229,11 +230,11 @@ class TestUsersEndpoint(TestCase):
 
 class TestGetStockTimeSeries(TestCase):
     def setUp(self):
-        settings.CELERY_TASK_ALWAYS_EAGER = True
+        app.conf.update(task_always_eager=True)
 
         self.country, created = Country.objects.get_or_create(name="United States")
         self.currency, created = Currency.objects.get_or_create(name="USD")
-        StockData.objects.get_or_create(
+        self.stock, created = StockData.objects.get_or_create(
             symbol="AAPL", country=self.country, currency=self.currency
         )
 
@@ -252,12 +253,33 @@ class TestGetStockTimeSeries(TestCase):
 
     @patch("stockApp.tasks.requests.get")
     @patch("stockApp.tasks.sleep")
+    def test_get_all_stock_time_series_success(self, mock_sleep, mock_get):
+        mock_response = MagicMock()
+        mock_response.json.return_value = self.response_result
+        mock_get.return_value = mock_response
+
+        get_all_stocks_time_series()
+
+        stock_time_series = StockTimeSeriesData.objects.get(stock=self.stock)
+        stock = StockData.objects.get(symbol="AAPL")
+
+        self.assertEqual(stock_time_series.open, 100.0)
+        self.assertEqual(
+            stock_time_series.date, datetime.strptime("2020-01-01", "%Y-%m-%d").date()
+        )
+        self.assertEquals(
+            stock.last_time_series_update,
+            datetime.strptime("2020-01-01", "%Y-%m-%d").date(),
+        )
+
+    @patch("stockApp.tasks.requests.get")
+    @patch("stockApp.tasks.sleep")
     def test_get_stock_time_series_success(self, mock_sleep, mock_get):
         mock_response = MagicMock()
         mock_response.json.return_value = self.response_result
         mock_get.return_value = mock_response
 
-        get_stock_time_series()
+        get_stock_time_series(self.stock.symbol)
 
         stock_time_series = StockTimeSeriesData.objects.get(stock__symbol="AAPL")
         stock = StockData.objects.get(symbol="AAPL")
