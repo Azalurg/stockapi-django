@@ -6,7 +6,7 @@
 <body>
     <h1>Hello {{user.first_name}}!</h1>
     {% for stock in  stocks %}
-        <p>{{stock.name}} - {{stock.symbol}}&emsp;{{stock.currency}}{{stock.close}} </p>
+        <p>{{stock.name}} - {{stock.symbol}}&emsp;{{stock.currency}}{{stock.close|floatformat:2}} </p>
     {% endfor %}
 </body>
 </html>
