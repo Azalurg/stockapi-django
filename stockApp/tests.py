@@ -338,7 +338,9 @@ class TestFollowUnfollowEndpoint(TestCase):
         self.user_token = AccessToken.for_user(self.user)
 
         response = self.c.post(
-            "/stock/follow", {"id": self.stock.id}, headers={"Authorization": f"Bearer {self.user_token}"}
+            "/stock/follow",
+            {"id": self.stock.id},
+            headers={"Authorization": f"Bearer {self.user_token}"},
         )
 
         self.assertEquals(response.status_code, 200)
@@ -349,7 +351,9 @@ class TestFollowUnfollowEndpoint(TestCase):
         self.user.following.add(self.stock)
 
         response = self.c.post(
-            "/stock/follow", {"id": self.stock.id}, headers={"Authorization": f"Bearer {self.user_token}"}
+            "/stock/follow",
+            {"id": self.stock.id},
+            headers={"Authorization": f"Bearer {self.user_token}"},
         )
 
         self.assertEquals(response.status_code, 400)
@@ -359,7 +363,9 @@ class TestFollowUnfollowEndpoint(TestCase):
         self.user_token = AccessToken.for_user(self.user)
 
         response = self.c.post(
-            "/stock/follow", {"id": 0}, headers={"Authorization": f"Bearer {self.user_token}"}
+            "/stock/follow",
+            {"id": 0},
+            headers={"Authorization": f"Bearer {self.user_token}"},
         )
 
         self.assertEquals(response.status_code, 404)
@@ -368,9 +374,7 @@ class TestFollowUnfollowEndpoint(TestCase):
         self.user = UserFactory.create()
         self.user_token = AccessToken.for_user(self.user)
 
-        response = self.c.post(
-            "/stock/follow", {"id": self.stock.id}
-        )
+        response = self.c.post("/stock/follow", {"id": self.stock.id})
 
         self.assertEquals(response.status_code, 401)
 
@@ -380,7 +384,9 @@ class TestFollowUnfollowEndpoint(TestCase):
         self.user.following.add(self.stock)
 
         response = self.c.post(
-            "/stock/unfollow", {"id": self.stock.id}, headers={"Authorization": f"Bearer {self.user_token}"}
+            "/stock/unfollow",
+            {"id": self.stock.id},
+            headers={"Authorization": f"Bearer {self.user_token}"},
         )
 
         self.assertEquals(response.status_code, 200)
@@ -390,7 +396,9 @@ class TestFollowUnfollowEndpoint(TestCase):
         self.user_token = AccessToken.for_user(self.user)
 
         response = self.c.post(
-            "/stock/unfollow", {"id": self.stock.id}, headers={"Authorization": f"Bearer {self.user_token}"}
+            "/stock/unfollow",
+            {"id": self.stock.id},
+            headers={"Authorization": f"Bearer {self.user_token}"},
         )
 
         self.assertEquals(response.status_code, 400)
@@ -423,10 +431,14 @@ class TestHomepage(TestCase):
         self.user.following.add(self.stock)
 
     def test_get_homepage(self):
-        response = self.c.get("/homepage/", headers={"Authorization": f"Bearer {self.user_token}"})
+        response = self.c.get(
+            "/homepage/", headers={"Authorization": f"Bearer {self.user_token}"}
+        )
 
         self.assertEquals(response.status_code, 200)
-        self.assertEquals(response.headers.get("Content-Type"), "text/html; charset=utf-8")
+        self.assertEquals(
+            response.headers.get("Content-Type"), "text/html; charset=utf-8"
+        )
 
     def test_get_homepage_without_token(self):
         response = self.c.get("/homepage/")

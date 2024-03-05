@@ -1,3 +1,4 @@
+import requests as req
 from django.db.models import OuterRef, Subquery, F
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -10,7 +11,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 
-from stockApp.models import CustomUser, StockData, StockTimeSeriesData
+from stockApp.models import (
+    CustomUser,
+    StockData,
+    StockTimeSeriesData,
+    Country,
+    Currency,
+)
 from stockApp.serializers import (
     CommonUserSerializer,
     UpdateUserSerializer,
@@ -167,4 +174,41 @@ class Homepage(APIView):
             request,
             "index.html",
             {"user": user, "stocks": StockDataSerializer(stocks, many=True).data},
+        )
+
+
+class StockRequest(APIView):
+    def post(self, request):
+        stock_symbol = request.data.get("symbol", None)
+        if stock_symbol is None or StockData.objects.filter(symbol=stock_symbol):
+            return Response(
+                {
+                    "message": "Symbol already exists in database or wrong symbol provided"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        stock_url = f"https://api.twelvedata.com/stocks?country=United States&exchange=NASDAQ&type=Common Stock&currency=USD&symbol={stock_symbol}"
+        response = req.get(stock_url)
+        data = response.json().get("data")
+        if len(data) == 0:
+            return Response(
+                {"message": f"No stock listed with provided symbol - {stock_symbol}"}
+            )
+
+        stock_data = data[0]
+        usa, created = Country.objects.get_or_create(name="United States")
+        us_dollar, created = Currency.objects.get_or_create(name="USD")
+        StockData.objects.create(
+            symbol=stock_data.get("symbol"),
+            name=stock_data.get("name"),
+            exchange=stock_data.get("exchange"),
+            type=StockData.StockType.COMMON_STOCK,
+            currency=us_dollar,
+            country=usa,
+        )
+        return Response(
+            {
+                f"message": f"Stock {stock_symbol} added - fetching price data in progress"
+            }
         )
