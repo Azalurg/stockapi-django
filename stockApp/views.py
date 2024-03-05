@@ -1,4 +1,7 @@
 from django.db.models import OuterRef, Subquery, F
+from django.http import HttpResponse
+from django.shortcuts import render
+from django.template import loader
 from rest_framework import permissions
 from rest_framework import status
 from rest_framework.generics import get_object_or_404, ListAPIView
@@ -13,6 +16,21 @@ from stockApp.serializers import (
     UpdateUserSerializer,
     StockDataSerializer,
 )
+
+stock_values = [
+    "stock__symbol",
+    "stock__name",
+    "stock__exchange",
+    "stock__type",
+    "stock__currency__name",
+    "stock__country__name",
+    "close",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+]
 
 
 class IsAdminGet(permissions.BasePermission):
@@ -78,20 +96,7 @@ class StockPrices(ListAPIView):
     def get(self, request):
         result = (
             StockTimeSeriesData.objects.filter(date=F("stock__last_time_series_update"))
-            .values(
-                "stock__symbol",
-                "stock__name",
-                "stock__exchange",
-                "stock__type",
-                "stock__currency__name",
-                "stock__country__name",
-                "close",
-                "open",
-                "high",
-                "low",
-                "close",
-                "volume",
-            )
+            .values(*stock_values)
             .order_by("-volume", "stock__symbol")
         )
 
@@ -142,3 +147,24 @@ class UnfollowStock(APIView):
         user.save()
 
         return Response({"message": "Success"})
+
+
+class Homepage(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        stocks_ids = user.following.values_list("id", flat=True)
+        stocks = (
+            StockTimeSeriesData.objects.filter(
+                date=F("stock__last_time_series_update"), stock__id__in=stocks_ids
+            )
+            .values(*stock_values)
+            .order_by("-volume", "stock__symbol")
+        )
+
+        return render(
+            request,
+            "index.html",
+            {"user": user, "stocks": StockDataSerializer(stocks, many=True).data},
+        )

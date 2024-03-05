@@ -394,3 +394,41 @@ class TestFollowUnfollowEndpoint(TestCase):
         )
 
         self.assertEquals(response.status_code, 400)
+
+
+class TestHomepage(TestCase):
+    def setUp(self):
+        self.c = Client()
+        self.country, created = Country.objects.get_or_create(name="United States")
+        self.currency, created = Currency.objects.get_or_create(name="USD")
+        self.stock, created = StockData.objects.get_or_create(
+            symbol="AAPL",
+            country=self.country,
+            currency=self.currency,
+            last_time_series_update="2021-01-01",
+        )
+
+        StockTimeSeriesData.objects.get_or_create(
+            open=100.0,
+            close=100.0,
+            high=100.0,
+            low=100.0,
+            volume=100000,
+            date="2021-01-01",
+            stock=self.stock,
+        )
+
+        self.user = UserFactory.create()
+        self.user_token = AccessToken.for_user(self.user)
+        self.user.following.add(self.stock)
+
+    def test_get_homepage(self):
+        response = self.c.get("/homepage/", headers={"Authorization": f"Bearer {self.user_token}"})
+
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.headers.get("Content-Type"), "text/html; charset=utf-8")
+
+    def test_get_homepage_without_token(self):
+        response = self.c.get("/homepage/")
+
+        self.assertEquals(response.status_code, 401)
