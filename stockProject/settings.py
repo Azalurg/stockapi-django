@@ -154,7 +154,7 @@ CELERY_TIMEZONE = 'Europe/Warsaw'
 
 CELERY_BEAT_SCHEDULE = {
     'get_stock_time_series': {
-        'task': "stockApp.tasks.get_stock_time_series",
+        'task': "stockApp.tasks.get_all_stocks_time_series",
         'schedule': crontab(hour="9", minute="01"),
     },
 }

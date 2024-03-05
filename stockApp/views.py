@@ -1,15 +1,12 @@
 import requests as req
-from django.db.models import OuterRef, Subquery, F
-from django.http import HttpResponse
+from django.db.models import F
 from django.shortcuts import render
-from django.template import loader
 from rest_framework import permissions
 from rest_framework import status
 from rest_framework.generics import get_object_or_404, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 
 from stockApp.models import (
     CustomUser,
@@ -23,6 +20,7 @@ from stockApp.serializers import (
     UpdateUserSerializer,
     StockDataSerializer,
 )
+from stockApp.tasks import get_stock_time_series
 
 stock_values = [
     "stock__symbol",
@@ -178,9 +176,14 @@ class Homepage(APIView):
 
 
 class StockRequest(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         stock_symbol = request.data.get("symbol", None)
-        if stock_symbol is None or StockData.objects.filter(symbol=stock_symbol):
+        if (
+            stock_symbol is None
+            or StockData.objects.filter(symbol=stock_symbol).first()
+        ):
             return Response(
                 {
                     "message": "Symbol already exists in database or wrong symbol provided"
@@ -199,7 +202,7 @@ class StockRequest(APIView):
         stock_data = data[0]
         usa, created = Country.objects.get_or_create(name="United States")
         us_dollar, created = Currency.objects.get_or_create(name="USD")
-        StockData.objects.create(
+        stock, create = StockData.objects.get_or_create(
             symbol=stock_data.get("symbol"),
             name=stock_data.get("name"),
             exchange=stock_data.get("exchange"),
@@ -207,6 +210,9 @@ class StockRequest(APIView):
             currency=us_dollar,
             country=usa,
         )
+
+        get_stock_time_series.delay(stock.symbol)
+
         return Response(
             {
                 f"message": f"Stock {stock_symbol} added - fetching price data in progress"

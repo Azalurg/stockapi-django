@@ -60,6 +60,8 @@ class StockData(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     last_time_series_update = models.DateField(default=None, null=True)
 
+    def __str__(self):
+        return f"{self.symbol} - {self.name}"
 
 class StockTimeSeriesData(models.Model):
     stock = models.ForeignKey(StockData, on_delete=models.CASCADE)
