@@ -466,3 +466,48 @@ class TestHomepage(TestCase):
         response = self.c.get("/homepage/")
 
         self.assertEquals(response.status_code, 401)
+
+
+class TestStockRequest(TestCase):
+    def setUp(self):
+        self.c = Client()
+        self.user = UserFactory.create()
+        self.user_token = AccessToken.for_user(self.user)
+        self.country, created = Country.objects.get_or_create(name="United States")
+        self.currency, created = Currency.objects.get_or_create(name="USD")
+        self.stock, created = StockData.objects.get_or_create(
+            symbol="NVDA",
+            country=self.country,
+            currency=self.currency,
+            last_time_series_update="2020-01-02",
+        )
+        self.response_result = {
+            "data": [
+                {
+                    "symbol": "GOOG",
+                    "name": "Alphabet Inc",
+                    "currency": "USD",
+                    "exchange": "NASDAQ",
+                    "mic_code": "XNGS",
+                    "country": "United States",
+                    "type": "Common Stock",
+                }
+            ]
+        }
+
+    @patch("stockApp.views.req.get")
+    @patch("stockApp.tasks.get_stock_time_series.delay")
+    def test_request_endpoint(self, mock_task, mock_request):
+        mock_response = MagicMock()
+        mock_response.json.return_value = self.response_result
+        mock_request.return_value = mock_response
+
+        response = self.c.post(
+            "/stock/request",
+            {"symbol": "GOOG"},
+            headers={"Authorization": f"Bearer {self.user_token}"},
+        )
+
+        self.assertEquals(response.status_code, 200)
+        mock_task.assert_called_once()
+        mock_request.assert_called_once()

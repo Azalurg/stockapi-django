@@ -196,7 +196,8 @@ class StockRequest(APIView):
         data = response.json().get("data")
         if len(data) == 0:
             return Response(
-                {"message": f"No stock listed with provided symbol - {stock_symbol}"}
+                {"message": f"No stock listed with provided symbol - {stock_symbol}"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         stock_data = data[0]
