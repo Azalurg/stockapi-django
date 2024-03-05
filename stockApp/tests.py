@@ -481,7 +481,7 @@ class TestStockRequest(TestCase):
             currency=self.currency,
             last_time_series_update="2020-01-02",
         )
-        self.response_result = {
+        self.response_result_correct = {
             "data": [
                 {
                     "symbol": "GOOG",
@@ -495,11 +495,13 @@ class TestStockRequest(TestCase):
             ]
         }
 
+        self.response_result_wrong = {"data": []}
+
     @patch("stockApp.views.req.get")
     @patch("stockApp.tasks.get_stock_time_series.delay")
     def test_request_endpoint(self, mock_task, mock_request):
         mock_response = MagicMock()
-        mock_response.json.return_value = self.response_result
+        mock_response.json.return_value = self.response_result_correct
         mock_request.return_value = mock_response
 
         response = self.c.post(
@@ -511,3 +513,41 @@ class TestStockRequest(TestCase):
         self.assertEquals(response.status_code, 200)
         mock_task.assert_called_once()
         mock_request.assert_called_once()
+
+    @patch("stockApp.views.req.get")
+    def test_request_endpoint_wrong_symbol(self, mock_request):
+        mock_response = MagicMock()
+        mock_response.json.return_value = self.response_result_wrong
+        mock_request.return_value = mock_response
+
+        response = self.c.post(
+            "/stock/request",
+            {"symbol": "Wrong"},
+            headers={"Authorization": f"Bearer {self.user_token}"},
+        )
+
+        self.assertEquals(response.status_code, 400)
+        mock_request.assert_called_once()
+
+    def test_request_endpoint_without_stock_symbol(self):
+        response = self.c.post(
+            "/stock/request",
+            {},
+            headers={"Authorization": f"Bearer {self.user_token}"},
+        )
+
+        self.assertEquals(response.status_code, 400)
+
+    def test_request_endpoint_with_already_existing_symbol(self):
+        response = self.c.post(
+            "/stock/request",
+            {"symbol": "NVDA"},
+            headers={"Authorization": f"Bearer {self.user_token}"},
+        )
+
+        self.assertEquals(response.status_code, 400)
+
+    def test_request_endpoint_with_token(self):
+        response = self.c.post("/stock/request", {"symbol": "GOOG"})
+
+        self.assertEquals(response.status_code, 401)
