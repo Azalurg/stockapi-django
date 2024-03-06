@@ -213,6 +213,8 @@ class StockRequest(APIView):
         stock_serializer = StockDataSerializer(data=data[0])
         if stock_serializer.is_valid():
             stock_serializer.save()
+            request.user.following.add(stock_serializer.data.get("id"))
+            request.user.save()
             get_stock_time_series.delay(stock_serializer.data.get("symbol"))
             return Response(stock_serializer.data, status=status.HTTP_201_CREATED)
         return Response(

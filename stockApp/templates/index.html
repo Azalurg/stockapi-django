@@ -1,12 +1,29 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <title>Homepage | {{user.name}}</title>
+    <title>Homepage | {{user.first_name}}</title>
 </head>
 <body>
     <h1>Hello {{user.first_name}}!</h1>
-    {% for stock in  stocks %}
-        <p>{{stock.name}} - {{stock.symbol}}&emsp;{{stock.currency}}{{stock.close|floatformat:2}} </p>
+    <table>
+        <thead>
+        <tr>
+            <td>Symbol</td>
+            <td>Name</td>
+            <td>Price</td>
+            <td>Currency</td>
+        </tr>
+        </thead>
+        <tbody>
+        {% for stock in  stocks %}
+        <tr id="{{stock.symbol}}">
+            <td>{{stock.symbol}}</td>
+            <td>{{stock.name}}</td>
+            <td>{{stock.close|floatformat:2}}</td>
+            <td>{{stock.currency}}</td>
+        </tr>
     {% endfor %}
+        </tbody>
+    </table>
 </body>
 </html>
