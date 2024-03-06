@@ -19,6 +19,7 @@ from stockApp.serializers import (
     CommonUserSerializer,
     UpdateUserSerializer,
     StockDataSerializer,
+    StockRequestSerializer,
 )
 from stockApp.tasks import get_stock_time_series
 
@@ -179,25 +180,19 @@ class StockRequest(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        stock_symbol = request.data.get("symbol", None)
-        if (
-            stock_symbol is None
-            or StockData.objects.filter(symbol=stock_symbol).first()
-        ):
-            return Response(
-                {
-                    "message": "Symbol already exists in database or wrong symbol provided"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        serializer = StockRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        stock_symbol = serializer.data.get("symbol")
         stock_url = f"https://api.twelvedata.com/stocks?country=United States&exchange=NASDAQ&type=Common Stock&currency=USD&symbol={stock_symbol}"
         response = req.get(stock_url)
+        print(response.json())
         data = response.json().get("data")
         if len(data) == 0:
             return Response(
                 {"message": f"No stock listed with provided symbol - {stock_symbol}"},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         stock_data = data[0]

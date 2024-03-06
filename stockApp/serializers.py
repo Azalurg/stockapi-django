@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
 
 from stockApp.models import CustomUser, StockData
 
@@ -47,3 +48,12 @@ class StockDataSerializer(serializers.Serializer):
     high = serializers.FloatField()
     low = serializers.FloatField()
     volume = serializers.FloatField()
+
+
+class StockRequestSerializer(serializers.Serializer):
+    symbol = serializers.CharField()
+
+    class Meta:
+        validators = [
+            UniqueTogetherValidator(queryset=StockData.objects.all(), fields=["symbol"])
+        ]
