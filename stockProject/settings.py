@@ -35,6 +35,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -162,3 +163,5 @@ CELERY_BEAT_SCHEDULE = {
 # Traveldata
 
 TWELVEDATA_API_KEY = env("TWELVEDATA_API_KEY")
+
+ASGI_APPLICATION = "stockProject.asgi.application"
