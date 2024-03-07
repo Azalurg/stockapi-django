@@ -510,7 +510,7 @@ class TestStockRequest(TestCase):
             headers={"Authorization": f"Bearer {self.user_token}"},
         )
 
-        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.status_code, 201)
         mock_task.assert_called_once()
         mock_request.assert_called_once()
 
@@ -526,7 +526,7 @@ class TestStockRequest(TestCase):
             headers={"Authorization": f"Bearer {self.user_token}"},
         )
 
-        self.assertEquals(response.status_code, 400)
+        self.assertEquals(response.status_code, 404)
         mock_request.assert_called_once()
 
     def test_request_endpoint_without_stock_symbol(self):
