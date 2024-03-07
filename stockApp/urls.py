@@ -8,7 +8,7 @@ from rest_framework_simplejwt.views import (
 )
 
 websocket_urlpatterns = [
-    path('ws/stock-prices', StockConsumer.as_asgi())
+    path('ws/stock-prices/', StockConsumer.as_asgi())
 ]
 
 urlpatterns = [

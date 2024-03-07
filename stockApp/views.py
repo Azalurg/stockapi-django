@@ -1,5 +1,3 @@
-import urllib.parse
-
 import requests as req
 from django.db.models import F
 from django.shortcuts import render
@@ -13,9 +11,7 @@ from rest_framework.views import APIView
 from stockApp.models import (
     CustomUser,
     StockData,
-    StockTimeSeriesData,
-    Country,
-    Currency,
+    StockTimeSeriesData
 )
 from stockApp.serializers import (
     CommonUserSerializer,

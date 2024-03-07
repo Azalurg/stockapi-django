@@ -164,4 +164,14 @@ CELERY_BEAT_SCHEDULE = {
 
 TWELVEDATA_API_KEY = env("TWELVEDATA_API_KEY")
 
+# WS
+
 ASGI_APPLICATION = "stockProject.asgi.application"
+CHANNEL_LAYERS = {
+    'default': {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}

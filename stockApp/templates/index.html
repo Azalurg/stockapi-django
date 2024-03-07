@@ -16,10 +16,10 @@
         </thead>
         <tbody>
         {% for stock in  stocks %}
-        <tr id="{{stock.symbol}}">
+        <tr>
             <td>{{stock.symbol}}</td>
             <td>{{stock.name}}</td>
-            <td>{{stock.close|floatformat:2}}</td>
+            <td id="{{stock.symbol}}">{{stock.close|floatformat:2}}</td>
             <td>{{stock.currency}}</td>
         </tr>
     {% endfor %}
@@ -27,13 +27,17 @@
     </table>
 
     <script type="text/javascript">
-        let url = "ws://127.0.0.1:8000/ws/stock-prices"
+        let url = `ws://${window.location.host}/ws/stock-prices/`
 
         const chatSocket = new WebSocket(url)
 
         chatSocket.onmessage = function(e){
             let data = JSON.parse(e.data)
-            console.log("ws-message:", data)
+            stockPrice = document.getElementById(data["symbol"]);
+            console.log(data)
+            if (stockPrice) {
+                stockPrice.textContent = `${parseFloat(data["price"]).toFixed(2)}`
+            }
         }
     </script>
 </body>
