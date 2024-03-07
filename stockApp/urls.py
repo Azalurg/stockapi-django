@@ -1,9 +1,15 @@
 from django.urls import path
 from stockApp import views
+
+from stockApp.consumers import StockConsumer
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+
+websocket_urlpatterns = [
+    path('ws/stock-prices', StockConsumer.as_asgi())
+]
 
 urlpatterns = [
     path('users/', views.UsersList.as_view()),

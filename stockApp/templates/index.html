@@ -25,5 +25,16 @@
     {% endfor %}
         </tbody>
     </table>
+
+    <script type="text/javascript">
+        let url = "ws://127.0.0.1:8000/ws/stock-prices"
+
+        const chatSocket = new WebSocket(url)
+
+        chatSocket.onmessage = function(e){
+            let data = JSON.parse(e.data)
+            console.log("ws-message:", data)
+        }
+    </script>
 </body>
 </html>
