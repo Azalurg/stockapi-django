@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from stockApp.models import CustomUser, StockData
+from stockApp.models import CustomUser, StockData, Country, Currency
 
 
 class CommonUserSerializer(serializers.ModelSerializer):
@@ -36,7 +36,7 @@ class UpdateUserSerializer(serializers.ModelSerializer):
         return instance
 
 
-class StockDataSerializer(serializers.Serializer):
+class StockDataWithPricesSerializer(serializers.Serializer):
     symbol = serializers.CharField(source="stock__symbol")
     name = serializers.CharField(source="stock__name")
     exchange = serializers.CharField(source="stock__exchange")
@@ -57,3 +57,21 @@ class StockRequestSerializer(serializers.Serializer):
         validators = [
             UniqueTogetherValidator(queryset=StockData.objects.all(), fields=["symbol"])
         ]
+
+
+class StockDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StockData
+        fields = [
+            "symbol",
+            "name",
+            "exchange",
+            "type",
+        ]
+
+    def create(self, validated_data):
+        country = Country.objects.get(name="United States")
+        currency = Currency.objects.get(name="USD")
+        return StockData.objects.create(
+            country=country, currency=currency, **validated_data
+        )

@@ -18,8 +18,9 @@ from stockApp.models import (
 from stockApp.serializers import (
     CommonUserSerializer,
     UpdateUserSerializer,
-    StockDataSerializer,
+    StockDataWithPricesSerializer,
     StockRequestSerializer,
+    StockDataSerializer,
 )
 from stockApp.tasks import get_stock_time_series
 
@@ -108,10 +109,10 @@ class StockPrices(ListAPIView):
 
         page = self.paginate_queryset(result)
         if page is not None:
-            serializer = StockDataSerializer(page, many=True)
+            serializer = StockDataWithPricesSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = StockDataSerializer(result, many=True)
+        serializer = StockDataWithPricesSerializer(result, many=True)
         return Response(serializer.data)
 
 
@@ -172,7 +173,10 @@ class Homepage(APIView):
         return render(
             request,
             "index.html",
-            {"user": user, "stocks": StockDataSerializer(stocks, many=True).data},
+            {
+                "user": user,
+                "stocks": StockDataWithPricesSerializer(stocks, many=True).data,
+            },
         )
 
 
@@ -180,14 +184,15 @@ class StockRequest(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = StockRequestSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        request_serializer = StockRequestSerializer(data=request.data)
+        if not request_serializer.is_valid():
+            return Response(
+                request_serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
-        stock_symbol = serializer.data.get("symbol")
+        stock_symbol = request_serializer.data.get("symbol")
         stock_url = f"https://api.twelvedata.com/stocks?country=United States&exchange=NASDAQ&type=Common Stock&currency=USD&symbol={stock_symbol}"
         response = req.get(stock_url)
-        print(response.json())
         data = response.json().get("data")
         if len(data) == 0:
             return Response(
@@ -195,22 +200,11 @@ class StockRequest(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        stock_data = data[0]
-        usa, created = Country.objects.get_or_create(name="United States")
-        us_dollar, created = Currency.objects.get_or_create(name="USD")
-        stock, create = StockData.objects.get_or_create(
-            symbol=stock_data.get("symbol"),
-            name=stock_data.get("name"),
-            exchange=stock_data.get("exchange"),
-            type=StockData.StockType.COMMON_STOCK,
-            currency=us_dollar,
-            country=usa,
-        )
-
-        get_stock_time_series.delay(stock.symbol)
-
+        stock_serializer = StockDataSerializer(data=data[0])
+        if stock_serializer.is_valid():
+            stock_serializer.save()
+            get_stock_time_series.delay(stock_serializer.data.get("symbol"))
+            return Response(stock_serializer.data, status=status.HTTP_201_CREATED)
         return Response(
-            {
-                f"message": f"Stock {stock_symbol} added - fetching price data in progress"
-            }
+            stock_serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
