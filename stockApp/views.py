@@ -1,3 +1,5 @@
+import urllib.parse
+
 import requests as req
 from django.db.models import F
 from django.shortcuts import render
@@ -182,6 +184,13 @@ class Homepage(APIView):
 
 class StockRequest(APIView):
     permission_classes = [IsAuthenticated]
+    base_url = "https://api.twelvedata.com/stocks"
+    params = {
+        "country": "United States",
+        "exchange": "NASDAQ",
+        "type": "Common Stock",
+        "currency": "USD",
+    }
 
     def post(self, request):
         request_serializer = StockRequestSerializer(data=request.data)
@@ -190,13 +199,14 @@ class StockRequest(APIView):
                 request_serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-        stock_symbol = request_serializer.data.get("symbol")
-        stock_url = f"https://api.twelvedata.com/stocks?country=United States&exchange=NASDAQ&type=Common Stock&currency=USD&symbol={stock_symbol}"
-        response = req.get(stock_url)
+        self.params["symbol"] = request_serializer.data.get("symbol")
+        response = req.get(self.base_url, params=self.params)
         data = response.json().get("data")
         if len(data) == 0:
             return Response(
-                {"message": f"No stock listed with provided symbol - {stock_symbol}"},
+                {
+                    "message": f"No stock listed with provided symbol - {self.params['symbol']}"
+                },
                 status=status.HTTP_404_NOT_FOUND,
             )
 
