@@ -14,7 +14,7 @@
             <td>Currency</td>
         </tr>
         </thead>
-        <tbody>
+        <tbody id="stock_list">
         {% for stock in  stocks %}
         <tr>
             <td>{{stock.symbol}}</td>
@@ -33,11 +33,26 @@
 
         chatSocket.onmessage = function(e){
             let data = JSON.parse(e.data)
-            stockPrice = document.getElementById(data["symbol"]);
-            console.log(data)
-            if (stockPrice) {
-                stockPrice.textContent = `${parseFloat(data["price"]).toFixed(2)}`
+  
+            if (data["type"] === "add"){
+                let stockList = document.getElementById("stock_list");
+                let newStock = document.createElement("tr")
+                newStock.innerHTML = `
+                <td>${data["symbol"]}</td>
+                <td>${data["name"]}</td>
+                <td id=${data["symbol"]}>${data["price"]}</td>
+                <td>${data["currency"]}</td>`
+                stockList.appendChild(newStock)
             }
+
+            if (data["type"] === "update") {
+                let stockPrice = document.getElementById(data["symbol"]);
+                if (stockPrice){
+                    stockPrice.textContent = `${parseFloat(data["price"]).toFixed(2)}`
+                }
+            }
+
+            console.log(data)
         }
     </script>
 </body>

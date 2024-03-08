@@ -66,6 +66,7 @@ class StockDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = StockData
         fields = [
+            "id",
             "symbol",
             "name",
             "exchange",

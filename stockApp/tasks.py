@@ -8,7 +8,6 @@ from django.conf import settings
 import requests
 
 from stockApp.models import StockData, StockTimeSeriesData
-from stockApp.consumers import StockConsumer
 
 
 @shared_task
@@ -39,7 +38,11 @@ def get_stock_time_series(stock_symbol):
         "market",
         {
             "type": "chat.message",
-            "message": {"symbol": stock_symbol, "price": timeseries_json["close"]},
+            "message": {
+                "symbol": stock_symbol,
+                "price": timeseries_json["close"],
+                "type": "update",
+            },
         },
     )
 
