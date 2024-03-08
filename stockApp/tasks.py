@@ -1,6 +1,9 @@
+import random
 from time import sleep
 
+from asgiref.sync import async_to_sync
 from celery import shared_task
+from channels.layers import get_channel_layer
 from django.conf import settings
 import requests
 
@@ -29,6 +32,19 @@ def get_stock_time_series(stock_symbol):
     )
     stock.last_time_series_update = timeseries_json["datetime"]
     stock.save()
+
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        "market",
+        {
+            "type": "chat.message",
+            "message": {
+                "symbol": stock_symbol,
+                "price": timeseries_json["close"],
+                "type": "update",
+            },
+        },
+    )
 
     return 0
 

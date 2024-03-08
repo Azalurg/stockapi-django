@@ -64,15 +64,17 @@ class StockDataSerializer(serializers.ModelSerializer):
     currency = serializers.SlugRelatedField(queryset=Currency.objects.all(), slug_field='name')
 
     class Meta:
-            model = StockData
-            fields = [
-                "symbol",
-                "name",
-                "exchange",
-                "type",
-                "country",
-                "currency"
-            ]
+        model = StockData
+        fields = [
+            "id",
+            "symbol",
+            "name",
+            "exchange",
+            "type",
+            "country",
+            "currency"
+        ]
+        read_only_fields = ["id"]
 
     def create(self, validated_data):
         return StockData.objects.create(**validated_data)

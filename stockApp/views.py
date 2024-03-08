@@ -1,6 +1,6 @@
-import urllib.parse
-
 import requests as req
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.db.models import F
 from django.shortcuts import render
 from rest_framework import permissions
@@ -10,13 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from stockApp.models import (
-    CustomUser,
-    StockData,
-    StockTimeSeriesData,
-    Country,
-    Currency,
-)
+from stockApp.models import CustomUser, StockData, StockTimeSeriesData
 from stockApp.serializers import (
     CommonUserSerializer,
     UpdateUserSerializer,
@@ -46,7 +40,7 @@ class IsAdminGet(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method == "GET":
             return (
-                request.user and request.user.is_authenticated and request.user.is_staff
+                    request.user and request.user.is_authenticated and request.user.is_staff
             )
         return True
 
@@ -213,6 +207,24 @@ class StockRequest(APIView):
         stock_serializer = StockDataSerializer(data=data[0])
         if stock_serializer.is_valid():
             stock_serializer.save()
+            request.user.following.add(stock_serializer.data.get("id"))
+            request.user.save()
+
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                "market",
+                {
+                    "type": "chat.message",
+                    "message": {
+                        "symbol": stock_serializer.data.get("symbol"),
+                        "price": "---",
+                        "type": "add",
+                        "currency": stock_serializer.data.get("currency"),
+                        "name": stock_serializer.data.get("name"),
+                    },
+                },
+            )
+
             get_stock_time_series.delay(stock_serializer.data.get("symbol"))
             return Response(stock_serializer.data, status=status.HTTP_201_CREATED)
         return Response(

@@ -1,12 +1,59 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <title>Homepage | {{user.name}}</title>
+    <title>Homepage | {{user.first_name}}</title>
 </head>
 <body>
     <h1>Hello {{user.first_name}}!</h1>
-    {% for stock in  stocks %}
-        <p>{{stock.name}} - {{stock.symbol}}&emsp;{{stock.currency}}{{stock.close|floatformat:2}} </p>
+    <table>
+        <thead>
+        <tr>
+            <td>Symbol</td>
+            <td>Name</td>
+            <td>Price</td>
+            <td>Currency</td>
+        </tr>
+        </thead>
+        <tbody id="stock_list">
+        {% for stock in  stocks %}
+        <tr>
+            <td>{{stock.symbol}}</td>
+            <td>{{stock.name}}</td>
+            <td id="{{stock.symbol}}">{{stock.close|floatformat:2}}</td>
+            <td>{{stock.currency}}</td>
+        </tr>
     {% endfor %}
+        </tbody>
+    </table>
+
+    <script type="text/javascript">
+        let url = `ws://${window.location.host}/ws/stock-prices/`
+
+        const chatSocket = new WebSocket(url)
+
+        chatSocket.onmessage = function(e){
+            let data = JSON.parse(e.data)
+  
+            if (data["type"] === "add"){
+                let stockList = document.getElementById("stock_list");
+                let newStock = document.createElement("tr")
+                newStock.innerHTML = `
+                <td>${data["symbol"]}</td>
+                <td>${data["name"]}</td>
+                <td id=${data["symbol"]}>${data["price"]}</td>
+                <td>${data["currency"]}</td>`
+                stockList.appendChild(newStock)
+            }
+
+            if (data["type"] === "update") {
+                let stockPrice = document.getElementById(data["symbol"]);
+                if (stockPrice){
+                    stockPrice.textContent = `${parseFloat(data["price"]).toFixed(2)}`
+                }
+            }
+
+            console.log(data)
+        }
+    </script>
 </body>
 </html>
