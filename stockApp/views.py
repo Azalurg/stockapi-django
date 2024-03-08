@@ -1,7 +1,8 @@
-from django.db.models import OuterRef, Subquery, F
-from django.http import HttpResponse
+import urllib.parse
+
+import requests as req
+from django.db.models import F
 from django.shortcuts import render
-from django.template import loader
 from rest_framework import permissions
 from rest_framework import status
 from rest_framework.generics import get_object_or_404, ListAPIView
@@ -9,13 +10,21 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-
-from stockApp.models import CustomUser, StockData, StockTimeSeriesData
+from stockApp.models import (
+    CustomUser,
+    StockData,
+    StockTimeSeriesData,
+    Country,
+    Currency,
+)
 from stockApp.serializers import (
     CommonUserSerializer,
     UpdateUserSerializer,
+    StockDataWithPricesSerializer,
+    StockRequestSerializer,
     StockDataSerializer,
 )
+from stockApp.tasks import get_stock_time_series
 
 stock_values = [
     "stock__symbol",
@@ -102,10 +111,10 @@ class StockPrices(ListAPIView):
 
         page = self.paginate_queryset(result)
         if page is not None:
-            serializer = StockDataSerializer(page, many=True)
+            serializer = StockDataWithPricesSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = StockDataSerializer(result, many=True)
+        serializer = StockDataWithPricesSerializer(result, many=True)
         return Response(serializer.data)
 
 
@@ -166,5 +175,46 @@ class Homepage(APIView):
         return render(
             request,
             "index.html",
-            {"user": user, "stocks": StockDataSerializer(stocks, many=True).data},
+            {
+                "user": user,
+                "stocks": StockDataWithPricesSerializer(stocks, many=True).data,
+            },
+        )
+
+
+class StockRequest(APIView):
+    permission_classes = [IsAuthenticated]
+    base_url = "https://api.twelvedata.com/stocks"
+    params = {
+        "country": "United States",
+        "exchange": "NASDAQ",
+        "type": "Common Stock",
+        "currency": "USD",
+    }
+
+    def post(self, request):
+        request_serializer = StockRequestSerializer(data=request.data)
+        if not request_serializer.is_valid():
+            return Response(
+                request_serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        self.params["symbol"] = request_serializer.data.get("symbol")
+        response = req.get(self.base_url, params=self.params)
+        data = response.json().get("data")
+        if len(data) == 0:
+            return Response(
+                {
+                    "message": f"No stock listed with provided symbol - {self.params['symbol']}"
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        stock_serializer = StockDataSerializer(data=data[0])
+        if stock_serializer.is_valid():
+            stock_serializer.save()
+            get_stock_time_series.delay(stock_serializer.data.get("symbol"))
+            return Response(stock_serializer.data, status=status.HTTP_201_CREATED)
+        return Response(
+            stock_serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

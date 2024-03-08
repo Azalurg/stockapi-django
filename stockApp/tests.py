@@ -9,7 +9,8 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 from stockApp.models import CustomUser, Country, Currency
 from stockApp.models import StockData, StockTimeSeriesData
-from stockApp.tasks import get_stock_time_series
+from stockApp.tasks import get_all_stocks_time_series, get_stock_time_series
+from stockProject.celery import app
 
 
 class UserFactory(factory.django.DjangoModelFactory):
@@ -229,11 +230,11 @@ class TestUsersEndpoint(TestCase):
 
 class TestGetStockTimeSeries(TestCase):
     def setUp(self):
-        settings.CELERY_TASK_ALWAYS_EAGER = True
+        app.conf.update(task_always_eager=True)
 
         self.country, created = Country.objects.get_or_create(name="United States")
         self.currency, created = Currency.objects.get_or_create(name="USD")
-        StockData.objects.get_or_create(
+        self.stock, created = StockData.objects.get_or_create(
             symbol="AAPL", country=self.country, currency=self.currency
         )
 
@@ -252,12 +253,33 @@ class TestGetStockTimeSeries(TestCase):
 
     @patch("stockApp.tasks.requests.get")
     @patch("stockApp.tasks.sleep")
+    def test_get_all_stock_time_series_success(self, mock_sleep, mock_get):
+        mock_response = MagicMock()
+        mock_response.json.return_value = self.response_result
+        mock_get.return_value = mock_response
+
+        get_all_stocks_time_series()
+
+        stock_time_series = StockTimeSeriesData.objects.get(stock=self.stock)
+        stock = StockData.objects.get(symbol="AAPL")
+
+        self.assertEqual(stock_time_series.open, 100.0)
+        self.assertEqual(
+            stock_time_series.date, datetime.strptime("2020-01-01", "%Y-%m-%d").date()
+        )
+        self.assertEquals(
+            stock.last_time_series_update,
+            datetime.strptime("2020-01-01", "%Y-%m-%d").date(),
+        )
+
+    @patch("stockApp.tasks.requests.get")
+    @patch("stockApp.tasks.sleep")
     def test_get_stock_time_series_success(self, mock_sleep, mock_get):
         mock_response = MagicMock()
         mock_response.json.return_value = self.response_result
         mock_get.return_value = mock_response
 
-        get_stock_time_series()
+        get_stock_time_series(self.stock.symbol)
 
         stock_time_series = StockTimeSeriesData.objects.get(stock__symbol="AAPL")
         stock = StockData.objects.get(symbol="AAPL")
@@ -338,7 +360,9 @@ class TestFollowUnfollowEndpoint(TestCase):
         self.user_token = AccessToken.for_user(self.user)
 
         response = self.c.post(
-            "/stock/follow", {"id": self.stock.id}, headers={"Authorization": f"Bearer {self.user_token}"}
+            "/stock/follow",
+            {"id": self.stock.id},
+            headers={"Authorization": f"Bearer {self.user_token}"},
         )
 
         self.assertEquals(response.status_code, 200)
@@ -349,7 +373,9 @@ class TestFollowUnfollowEndpoint(TestCase):
         self.user.following.add(self.stock)
 
         response = self.c.post(
-            "/stock/follow", {"id": self.stock.id}, headers={"Authorization": f"Bearer {self.user_token}"}
+            "/stock/follow",
+            {"id": self.stock.id},
+            headers={"Authorization": f"Bearer {self.user_token}"},
         )
 
         self.assertEquals(response.status_code, 400)
@@ -359,7 +385,9 @@ class TestFollowUnfollowEndpoint(TestCase):
         self.user_token = AccessToken.for_user(self.user)
 
         response = self.c.post(
-            "/stock/follow", {"id": 0}, headers={"Authorization": f"Bearer {self.user_token}"}
+            "/stock/follow",
+            {"id": 0},
+            headers={"Authorization": f"Bearer {self.user_token}"},
         )
 
         self.assertEquals(response.status_code, 404)
@@ -368,9 +396,7 @@ class TestFollowUnfollowEndpoint(TestCase):
         self.user = UserFactory.create()
         self.user_token = AccessToken.for_user(self.user)
 
-        response = self.c.post(
-            "/stock/follow", {"id": self.stock.id}
-        )
+        response = self.c.post("/stock/follow", {"id": self.stock.id})
 
         self.assertEquals(response.status_code, 401)
 
@@ -380,7 +406,9 @@ class TestFollowUnfollowEndpoint(TestCase):
         self.user.following.add(self.stock)
 
         response = self.c.post(
-            "/stock/unfollow", {"id": self.stock.id}, headers={"Authorization": f"Bearer {self.user_token}"}
+            "/stock/unfollow",
+            {"id": self.stock.id},
+            headers={"Authorization": f"Bearer {self.user_token}"},
         )
 
         self.assertEquals(response.status_code, 200)
@@ -390,7 +418,9 @@ class TestFollowUnfollowEndpoint(TestCase):
         self.user_token = AccessToken.for_user(self.user)
 
         response = self.c.post(
-            "/stock/unfollow", {"id": self.stock.id}, headers={"Authorization": f"Bearer {self.user_token}"}
+            "/stock/unfollow",
+            {"id": self.stock.id},
+            headers={"Authorization": f"Bearer {self.user_token}"},
         )
 
         self.assertEquals(response.status_code, 400)
@@ -423,12 +453,101 @@ class TestHomepage(TestCase):
         self.user.following.add(self.stock)
 
     def test_get_homepage(self):
-        response = self.c.get("/homepage/", headers={"Authorization": f"Bearer {self.user_token}"})
+        response = self.c.get(
+            "/homepage/", headers={"Authorization": f"Bearer {self.user_token}"}
+        )
 
         self.assertEquals(response.status_code, 200)
-        self.assertEquals(response.headers.get("Content-Type"), "text/html; charset=utf-8")
+        self.assertEquals(
+            response.headers.get("Content-Type"), "text/html; charset=utf-8"
+        )
 
     def test_get_homepage_without_token(self):
         response = self.c.get("/homepage/")
+
+        self.assertEquals(response.status_code, 401)
+
+
+class TestStockRequest(TestCase):
+    def setUp(self):
+        self.c = Client()
+        self.user = UserFactory.create()
+        self.user_token = AccessToken.for_user(self.user)
+        self.country, created = Country.objects.get_or_create(name="United States")
+        self.currency, created = Currency.objects.get_or_create(name="USD")
+        self.stock, created = StockData.objects.get_or_create(
+            symbol="NVDA",
+            country=self.country,
+            currency=self.currency,
+            last_time_series_update="2020-01-02",
+        )
+        self.response_result_correct = {
+            "data": [
+                {
+                    "symbol": "GOOG",
+                    "name": "Alphabet Inc",
+                    "currency": "USD",
+                    "exchange": "NASDAQ",
+                    "mic_code": "XNGS",
+                    "country": "United States",
+                    "type": "Common Stock",
+                }
+            ]
+        }
+
+        self.response_result_wrong = {"data": []}
+
+    @patch("stockApp.views.req.get")
+    @patch("stockApp.tasks.get_stock_time_series.delay")
+    def test_request_endpoint(self, mock_task, mock_request):
+        mock_response = MagicMock()
+        mock_response.json.return_value = self.response_result_correct
+        mock_request.return_value = mock_response
+
+        response = self.c.post(
+            "/stock/request",
+            {"symbol": "GOOG"},
+            headers={"Authorization": f"Bearer {self.user_token}"},
+        )
+
+        self.assertEquals(response.status_code, 201)
+        mock_task.assert_called_once()
+        mock_request.assert_called_once()
+
+    @patch("stockApp.views.req.get")
+    def test_request_endpoint_wrong_symbol(self, mock_request):
+        mock_response = MagicMock()
+        mock_response.json.return_value = self.response_result_wrong
+        mock_request.return_value = mock_response
+
+        response = self.c.post(
+            "/stock/request",
+            {"symbol": "Wrong"},
+            headers={"Authorization": f"Bearer {self.user_token}"},
+        )
+
+        self.assertEquals(response.status_code, 404)
+        mock_request.assert_called_once()
+
+    def test_request_endpoint_without_stock_symbol(self):
+        response = self.c.post(
+            "/stock/request",
+            {},
+            headers={"Authorization": f"Bearer {self.user_token}"},
+        )
+
+        self.assertEquals(response.status_code, 400)
+
+    def test_request_endpoint_with_already_existing_symbol(self):
+        response = self.c.post(
+            "/stock/request",
+            {"symbol": "NVDA"},
+            headers={"Authorization": f"Bearer {self.user_token}"},
+        )
+
+        self.assertEquals(response.status_code, 400)
+
+    def test_request_endpoint_with_token(self):
+        response = self.c.post("/stock/request", {"symbol": "GOOG"})
 
         self.assertEquals(response.status_code, 401)
