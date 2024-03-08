@@ -60,18 +60,19 @@ class StockRequestSerializer(serializers.Serializer):
 
 
 class StockDataSerializer(serializers.ModelSerializer):
+    country = serializers.SlugRelatedField(queryset=Country.objects.all(), slug_field='name')
+    currency = serializers.SlugRelatedField(queryset=Currency.objects.all(), slug_field='name')
+
     class Meta:
-        model = StockData
-        fields = [
-            "symbol",
-            "name",
-            "exchange",
-            "type",
-        ]
+            model = StockData
+            fields = [
+                "symbol",
+                "name",
+                "exchange",
+                "type",
+                "country",
+                "currency"
+            ]
 
     def create(self, validated_data):
-        country = Country.objects.get(name="United States")
-        currency = Currency.objects.get(name="USD")
-        return StockData.objects.create(
-            country=country, currency=currency, **validated_data
-        )
+        return StockData.objects.create(**validated_data)
