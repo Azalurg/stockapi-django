@@ -18,12 +18,13 @@ To run the application execute command:
 python manage.py runserver
 ```
 
-## Celery
+## Celery and WS
 
-- Run broker RabbitMQ (example with docker)
+- Run broker RabbitMQ (example with docker) and Reddis for channel layers
 
 ```sh
 docker run -d -p 5672:5672 rabbitmq
+docker run -p 6379:6379 redis:7 
 ```
 
 - Run Celery worker and beat
