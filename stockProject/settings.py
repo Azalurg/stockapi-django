@@ -24,11 +24,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-n=8lq@h6i$bji82vc2-%+%*4a*--nic=1u@6ogmzq+^DB234yy'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env("DEBUG")
 
 ALLOWED_HOSTS = []
 
@@ -77,12 +81,11 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'stockProject.wsgi.application'
+ASGI_APPLICATION = "stockProject.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-env = environ.Env()
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 DATABASES = {
     'default': {
@@ -128,6 +131,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = 'stockProject/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -171,7 +175,7 @@ CHANNEL_LAYERS = {
     'default': {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [(env("REDIS_HOST"),  env("REDIS_PORT"))],
         },
     },
 }

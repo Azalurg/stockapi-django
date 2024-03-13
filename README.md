@@ -42,3 +42,23 @@ celery -A stockProject beat -l info
 ```sh
 celery --broker=amqp://guest:guest@localhost:5672// flower
 ```
+
+## Docker 
+
+In order to run app form docker container first prepare static files:
+
+```sh
+python manage.py collectstatic
+```
+
+Then prepare .env.docker file (basic example in example.env), and build docker image with
+
+```sh
+docker build --no-cache -t stock-api-django .
+```
+
+In order to run an app u can use:
+
+```sh
+ docker run -d --env-file .env.docker -p 8000:8000 django-test:latest
+```
