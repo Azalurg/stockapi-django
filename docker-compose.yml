@@ -1,0 +1,93 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:latest
+    environment:
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+
+  gunicorn:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: gunicorn --bind 0.0.0.0:8000 stockProject.wsgi:application
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - celery-worker
+      - celery-beat
+    env_file:
+      - .env.docker
+
+  daphne:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: daphne -b 0.0.0.0 -p 8001 stockProject.asgi:application
+    ports:
+      - "8001:8001"
+    depends_on:
+      - gunicorn
+      - redis-service
+    env_file:
+      - .env.docker
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A stockProject worker -l info
+    depends_on:
+      - db
+      - redis-service
+      - rabbitmq-service
+    env_file:
+      - .env.docker
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A stockProject beat -l info
+    depends_on:
+      - celery-worker
+    env_file:
+      - .env.docker
+
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery --broker=amqp://guest:guest@rabbitmq-service:5672// flower
+    ports:
+      - "5555:5555"
+    depends_on:
+      - celery-worker
+    env_file:
+      - .env.docker
+
+
+  rabbitmq-service:
+    image: rabbitmq:latest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  redis-service:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres:
