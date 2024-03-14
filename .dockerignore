@@ -1,3 +1,7 @@
 *.md
-venv/
 *.env
+docker-compose.yml
+
+venv/
+media/
+static/
