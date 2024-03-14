@@ -28,7 +28,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: gunicorn --bind 0.0.0.0:8000 stockProject.wsgi:application
+    command: sh start-gunicorn.sh
     expose:
       - "8000"
     depends_on:
