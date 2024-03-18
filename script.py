@@ -9,6 +9,13 @@ import requests
 from stockApp.models import StockData, Currency, Country
 
 
+def check_data():
+    if not StockData.objects.exists():
+        print("Loading initial data...")
+        load_data()
+    return 0
+
+
 def load_data():
     api_url = "https://api.twelvedata.com/stocks?country=United States&exchange=NASDAQ&type=Common Stock&currency=USD"
 
@@ -28,6 +35,10 @@ def load_data():
             country=usa,
         )
 
+    return 0
+
 
 if __name__ == "__main__":
-    load_data()
+    print("Start loading script...")
+    check_data()
+    print("Stock data in database.")
